@@ -4,12 +4,9 @@
 I have some corrupted mysql bin log files , so I changed some files to support
 corrupted bin logfiles.
 
-
 Thank @jeremycole and others for making the library.
 
 # Library for parsing MySQL binary logs in Ruby #
-
-
 
 
 
@@ -313,3 +310,5 @@ All event types can be read, but may not be parsed, as not all event types are c
     <td>Supported, treated as BLOB.</td>
   </tr>
 </table>
+
+[Online Recruitment Software and Resume Management System](http://www.talentlists.com)
