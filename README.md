@@ -1,4 +1,17 @@
+# Supporting of parsing corrupted mysql bin log files #
+
+
+I have some corrupted mysql bin log files , so I changed some files to support
+corrupted bin logfiles.
+
+
+Thank @jeremycole and others for making the library.
+
 # Library for parsing MySQL binary logs in Ruby #
+
+
+
+
 
 This library parses a MySQL binary log in pure Ruby and produces hashes as output, much like the following `Query` event:
 

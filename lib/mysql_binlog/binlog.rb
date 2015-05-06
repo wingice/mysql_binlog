@@ -81,8 +81,13 @@ module MysqlBinlog
     def read_event_fields(header)
       # Delegate the parsing of the event content to a method of the same name
       # in BinlogEventParser.
-      if event_parser.methods.map(&:to_sym).include? header[:event_type]
+      if header_is_good(header)
         fields = event_parser.send(header[:event_type], header)
+        skip_event(header)
+      else
+        return nil if reader.end?
+        header[:event_type] = 0
+        reader.move_one_byte
       end
 
       # Check if we've read past the end of the event. This is normally because
@@ -90,18 +95,22 @@ module MysqlBinlog
       # or a bug in the event reader method in BinlogEventParser. This may also
       # be due to user error in providing an initial start position or later
       # seeking to a position which is not a valid event start position.
-      if reader.position > header[:next_position]
-        raise OverReadException.new("Read past end of event; corrupted event, bad start position, or bug in mysql_binlog?")
-      end
+
+      # if reader.position > header[:next_position]
+      #   raise OverReadException.new("Read past end of event; corrupted event, bad start position, or bug in mysql_binlog?")
+      # end
 
       # Anything left unread at this point is skipped based on the event length
       # provided in the header. In this way, it is possible to skip over events
       # that are not able to be parsed completely by this library.
-      skip_event(header)
-
       fields
     end
     private :read_event_fields
+
+    def header_is_good(header)
+      event_parser.methods.map(&:to_sym).include?(header[:event_type]) &&
+        reader.position + header[:event_length] - 19 == header[:next_position]
+    end
 
     # Scan events until finding one that isn't rejected by the filter rules.
     # If there are no filter rules, this will return the next event provided
@@ -147,7 +156,7 @@ module MysqlBinlog
         end
 
         fields = read_event_fields(header)
-
+        
         case header[:event_type]
         when :rotate_event
           unless ignore_rotate

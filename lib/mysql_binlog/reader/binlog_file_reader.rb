@@ -13,7 +13,8 @@ module MysqlBinlog
 
     def verify_magic
       if (magic = read(MAGIC_SIZE).unpack("V").first) != MAGIC_VALUE
-        raise MalformedBinlogException.new("Magic number #{magic} is incorrect")
+        # raise MalformedBinlogException.new("Magic number #{magic} is incorrect")
+        STDERR.puts "This file does not have the flag of MySQL binlog file, please check first"
       end
     end
 
@@ -21,7 +22,6 @@ module MysqlBinlog
       @dirname  = File.dirname(filename)
       @filename = File.basename(filename)
       @binlog   = File.open(filename, mode="r")
-
       verify_magic
     end
 
@@ -76,7 +76,12 @@ module MysqlBinlog
       seek(header[:next_position])
     end
 
+    def move_one_byte
+      @binlog.seek(1-19, IO::SEEK_CUR)
+    end
+    
     def read(length)
+      length= 4 if length < 0
       if tail
         needed_position = position + length
         while @binlog.stat.size < needed_position
@@ -90,6 +95,8 @@ module MysqlBinlog
       elsif data.length == 0
         raise ZeroReadException.new
       elsif data.length < length
+        STDERR.puts "Can't read enough bytes, maybe it reached the end of file"
+        STDERR.puts
         raise ShortReadException.new
       end
       data

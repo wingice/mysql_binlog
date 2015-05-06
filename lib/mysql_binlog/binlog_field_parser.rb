@@ -204,13 +204,13 @@ module MysqlBinlog
     # 8-bit (1-byte) to 32-bit (4-byte) unsigned integer, depending on the
     # optional size parameter (default 1), followed by the string itself with
     # no termination character.
-    def read_lpstring(size=1)
-      length = read_uint_by_size(size)
+    def read_lpstring(max_length, size=1)
+      length = [read_uint_by_size(size), max_length].min
       read_nstring(length)
     end
 
     # Read an lpstring (as above) which is also terminated with a null byte.
-    def read_lpstringz(size=1)
+    def read_lpstringz(max_length,size=1)
       string = read_lpstring(size)
       reader.read(1) # null
       string

@@ -186,6 +186,7 @@ module MysqlBinlog
       header[:event_length]   = parser.read_uint32
       header[:next_position]  = parser.read_uint32
       header[:flags] = parser.read_uint_bitmap_by_size_and_name(2, EVENT_HEADER_FLAGS)
+
       header
     end
 
@@ -230,7 +231,7 @@ module MysqlBinlog
         when :sql_mode
           parser.read_uint64
         when :catalog_deprecated
-          parser.read_lpstringz
+          parser.read_lpstringz(status_length-1)
         when :auto_increment
           {
             :increment => parser.read_uint16,
@@ -243,9 +244,9 @@ module MysqlBinlog
             :collation_server     => COLLATION[parser.read_uint16],
           }
         when :time_zone
-          parser.read_lpstring
+          parser.read_lpstring(status_length-1)
         when :catalog
-          parser.read_lpstring
+          parser.read_lpstring(status_length-1)
         when :lc_time_names
           parser.read_uint16
         when :charset_database
@@ -259,7 +260,10 @@ module MysqlBinlog
       # Raise a more specific exception here instead of the generic
       # OverReadException from the entire event.
       if reader.position > end_position
-        raise OverReadException.new("Read past end of Query event status field")
+        puts status_length
+        puts reader.position
+        puts end_position
+     #   raise OverReadException.new("Read past end of Query event status field")
       end
 
       status
@@ -278,7 +282,7 @@ module MysqlBinlog
       fields[:status] = _query_event_status(header, fields)
       fields[:db] = parser.read_nstringz(db_length + 1)
       query_length = reader.remaining(header)
-      fields[:query] = reader.read([query_length, binlog.max_query_length].min)
+      fields[:query] = reader.read([query_length, binlog.max_query_length].min).force_encoding("UTF-8")
       fields
     end
 
@@ -407,6 +411,7 @@ module MysqlBinlog
     # in Table_metadata_log_event::write_data_header
     # and Table_metadata_log_event::write_data_body
     def table_metadata_event(header)
+      byebug
       fields = {}
       table_id = parser.read_uint48
       columns = parser.read_uint16
